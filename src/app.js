@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { getDb } from "./config/db.js";
+import userRoutes from "./routes/user.routes.js";
 
 const app = express();
 
@@ -38,8 +39,10 @@ app.get("/api/health", async (req, res, next) => {
   }
 });
 
+app.use("/api", userRoutes);  
 // 404
 app.use((req, res) => {
+  
   res.status(404).json({ message: "Route not found" });
 });
 
