@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { getDb } from "./config/db.js";
 import userRoutes from "./routes/user.routes.js";
+import serviceRoutes from "./routes/service.routes.js";
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.get("/api/health", async (req, res, next) => {
 });
 
 app.use("/api", userRoutes);  
+app.use("/api/services", serviceRoutes);
 // 404
 app.use((req, res) => {
   
