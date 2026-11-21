@@ -80,4 +80,125 @@ export async function getServiceById(req, res, next) {
   } catch (error) {
     next(error);
   }
+  
+}
+
+// Service ta khuje ber kore, owner na hole nijei response pathay ebong null dey
+async function loadOwnedService(req, res) {
+  const _id = toObjectId(req.params.id);
+  if (!_id) {
+    res.status(404).json({ message: "Service not found" });
+    return null;
+  }
+
+  const { services } = await getCollections();
+  const service = await services.findOne({ _id });
+  if (!service) {
+    res.status(404).json({ message: "Service not found" });
+    return null;
+  }
+  if (service.technicianEmail !== req.user.email) {
+    res.status(403).json({ message: "Forbidden: this is not your service" });
+    return null;
+  }
+  return service;
+}
+
+// GET /api/services/mine
+export async function getMyServices(req, res, next) {
+  try {
+    const { services } = await getCollections();
+    const items = await services
+      .find({ technicianEmail: req.user.email })
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json({ services: items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// POST /api/services
+export async function createService(req, res, next) {
+  try {
+    const { data, error } = validateServiceInput(req.body);
+    if (error) return res.status(400).json({ message: error });
+
+    const { services } = await getCollections();
+    const doc = {
+      ...data,
+      technicianName: req.user.name,
+      technicianEmail: req.user.email,
+      approvalStatus: "pending",
+      isAvailable: true,
+      createdAt: new Date(),
+    };
+    const result = await services.insertOne(doc);
+
+    res.status(201).json({
+      message: "Service submitted and waiting for admin approval",
+      service: { ...doc, _id: result.insertedId },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// PATCH /api/services/:id (edit korle abar admin approval lagbe)
+export async function updateService(req, res, next) {
+  try {
+    const existing = await loadOwnedService(req, res);
+    if (!existing) return;
+
+    const { data, error } = validateServiceInput(req.body);
+    if (error) return res.status(400).json({ message: error });
+
+    const { services } = await getCollections();
+    await services.updateOne(
+      { _id: existing._id },
+      { $set: { ...data, approvalStatus: "pending", updatedAt: new Date() } }
+    );
+
+    res.json({ message: "Service updated and sent for admin approval again" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// PATCH /api/services/:id/availability
+export async function toggleAvailability(req, res, next) {
+  try {
+    if (typeof req.body?.isAvailable !== "boolean") {
+      return res.status(400).json({ message: "isAvailable must be true or false" });
+    }
+    const existing = await loadOwnedService(req, res);
+    if (!existing) return;
+
+    const { services } = await getCollections();
+    await services.updateOne(
+      { _id: existing._id },
+      { $set: { isAvailable: req.body.isAvailable } }
+    );
+
+    res.json({
+      message: req.body.isAvailable ? "Service is now available" : "Service is now hidden",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// DELETE /api/services/:id
+export async function deleteService(req, res, next) {
+  try {
+    const existing = await loadOwnedService(req, res);
+    if (!existing) return;
+
+    const { services } = await getCollections();
+    await services.deleteOne({ _id: existing._id });
+
+    res.json({ message: "Service deleted" });
+  } catch (error) {
+    next(error);
+  }
 }
