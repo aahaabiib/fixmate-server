@@ -6,6 +6,8 @@ import serviceRoutes from "./routes/service.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import { stripeWebhook } from "./controllers/checkout.controller.js";
+
 
 const app = express();
 
@@ -27,10 +29,16 @@ app.use(
   })
 );
 
+app.post(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook
+);
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ message: "FixMate server is running" });
+  res.json({ message: "FixMate server is running" }); 
 });
 
 app.get("/api/health", async (req, res, next) => {
@@ -48,7 +56,10 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
-// 404
+
+
+
+// 404 handler 
 app.use((req, res) => {
   
   res.status(404).json({ message: "Route not found" });
