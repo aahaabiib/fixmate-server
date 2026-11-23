@@ -2,6 +2,7 @@ import { getCollections } from "../config/db.js";
 import { CATEGORIES, SERVICE_MODES } from "../constants.js";
 import { toObjectId } from "../utils/object-id.js";
 import { validateServiceInput } from "../utils/validate-service.js";
+import { attachRatings } from "../utils/attach-ratings.js";
 
 const SORTS = {
   newest: { createdAt: -1, _id: -1 },
@@ -46,7 +47,7 @@ export async function getServices(req, res, next) {
     ]);
 
     res.json({
-      services: items,
+      services: await attachRatings(items),
       total,
       page,
       limit,
