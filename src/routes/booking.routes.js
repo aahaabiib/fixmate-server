@@ -8,6 +8,7 @@ import {
   getTechnicianBookings,
   updateBookingStatus,
 } from "../controllers/booking.controller.js";
+import { addReview } from "../controllers/review.controller.js";
 
 const router = Router();
 
@@ -15,6 +16,7 @@ const router = Router();
 router.post("/", verifyToken, verifyCustomer, createBooking);
 router.get("/my", verifyToken, verifyCustomer, getMyBookings);
 router.patch("/:id/cancel", verifyToken, verifyCustomer, cancelBooking);
+router.patch("/:id/review", verifyToken, verifyCustomer, addReview);
 
 // Technician
 router.get("/technician", verifyToken, verifyTechnician, getTechnicianBookings);
